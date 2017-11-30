@@ -1,5 +1,6 @@
 import pymysql
-from sqlalchemy import create_engine, Column, String, Integer, DateTime, ForeignKey, Text, Index, UniqueConstraint
+from sqlalchemy import create_engine, Column, String, Integer, DateTime, ForeignKey, Text, Index, UniqueConstraint, \
+    Boolean
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
 
@@ -47,6 +48,7 @@ class User(Base):
     image = Column(String(255))
     note = Column(String(255))
     url = Column(String(255))
+    is_over = Column(Boolean, default=False)
 
     # articles = relationship('Article', primaryjoin='users.c.id==articles.c.author_id')
     # followers = relationship('Follower', primaryjoin='users.c.id==followers.c.following_id')

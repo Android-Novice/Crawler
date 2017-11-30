@@ -25,7 +25,23 @@ author_base_url = base_url + '/u/'
 def start_crawling():
     global browser
     browser = webdriver.Chrome('C:\Program Files (x86)\Google\Chrome\Application\chromedriver')
-    browser.set_page_load_timeout(30)
+    global myre
+    try:
+        # Wide UCS-4 build
+        myre = re.compile(u'['
+                          u'\U0001F300-\U0001F64F'
+                          u'\U0001F680-\U0001F6FF'
+                          u'\u2600-\u2B55]+',
+                          re.UNICODE)
+    except re.error:
+        # Narrow UCS-2 build
+        myre = re.compile(u'('
+                          u'\ud83c[\udf00-\udfff]|'
+                          u'\ud83d[\udc00-\ude4f\ude80-\udeff]|'
+                          u'[\u2600-\u2B55])+',
+                          re.UNICODE)
+    # browser.set_page_load_timeout(30)
+    # browser.implicitly_wait(20)
     init_mysql()
     _get_recommend_list()
 
@@ -36,11 +52,14 @@ def _get_recommend_list():
     try:
         while has_data:
             html_text = _get_html_inner_text(recommend_base_url + '?page=' + str(page_index))
+            if html_text is None:
+                continue
             soup = bs4.BeautifulSoup(html_text, 'html.parser')
             elems = soup.select('div.col-xs-8 div.wrap')
             for elem in elems:
-                item_soup = bs4.BeautifulSoup(str(elem), 'html.parser')
-                aElem = item_soup.select('a')[0]
+                # item_soup = bs4.BeautifulSoup(str(elem), 'html.parser')
+                # aElem = item_soup.select('a')[0]
+                aElem = elem.findChild('a')
                 author_url = aElem.get('href')
                 author_url = base_url + author_url
                 author = _get_author_full_info(author_url, session)
@@ -54,15 +73,17 @@ def _get_recommend_list():
 
 def _get_author_full_info(author_url, session):
     author = _get_author_base_info(author_url, session)
-    if author is not None:
+    if (author is not None) and (not author.is_over):
         if len(author.articles) != author.article_count:
             _get_author_articles(author, session)
         if len(author.followers) != author.follower_count:
             _get_author_followers(author, session)
+        author.is_over = True
+        commit2db(author, session)
     return author
 
 def _get_author_base_info(author_url, session):
-    print('********************get author start**********************')
+    print('********************get author base info start**********************')
     author_id = author_url.split('/').pop()
     if author_id is None:
         return None
@@ -72,6 +93,8 @@ def _get_author_base_info(author_url, session):
 
     print('author_url: ' + author_url)
     html_text = _get_html_inner_text(author_url)
+    if html_text is None:
+        return None
     parent_soup = bs4.BeautifulSoup(html_text, 'html.parser')
     # 头像
     imageElm = parent_soup.select('div.main-top a.avatar img')[0]
@@ -83,33 +106,43 @@ def _get_author_base_info(author_url, session):
     # 个人介绍
     noteElem = parent_soup.select('div.description div.js-intro')[0]
     author_note = noteElem.text
-    # 作者关注的人数和url
+
     extraElms = parent_soup.select('div.main-top div.info ul li')
-    followingSoup = bs4.BeautifulSoup(str(extraElms[0]))
-    followingElem = followingSoup.select('div.meta-block a')[0]
-    countElem = followingElem.findChild('p')
-    following_url = base_url + followingElem.get('href')
-    author_following_count = int(countElem.text)
+    # 作者关注的人数和url
+    following_url = base_url + extraElms[0].div.a['href']
+    author_following_count = int(extraElms[0].div.a.p.string)
+    # followingSoup = bs4.BeautifulSoup(str(extraElms[0]))
+    # followingElem = followingSoup.select('div.meta-block a')[0]
+    # countElem = followingElem.findChild('p')
+    # following_url = base_url + followingElem.get('href')
+    # author_following_count = int(countElem.text)
     # 关注作者的人数
-    followerSoup = bs4.BeautifulSoup(str(extraElms[1]))
-    followerElem = followerSoup.select('div.meta-block a')[0]
-    countElem = followerElem.findChild('p')
-    follower_url = base_url + followerElem.get('href')
-    author_follower_count = int(countElem.text)
+    # followerSoup = bs4.BeautifulSoup(str(extraElms[1]))
+    # followerElem = followerSoup.select('div.meta-block a')[0]
+    # countElem = followerElem.findChild('p')
+    # follower_url = base_url + followerElem.get('href')
+    # author_follower_count = int(countElem.text)
+    follower_url = base_url + extraElms[1].div.a['href']
+    author_follower_count = int(extraElms[1].div.a.p.string)
     # 文章数量
-    articleSoup = bs4.BeautifulSoup(str(extraElms[2]))
-    articleElem = articleSoup.select('div.meta-block a')[0]
-    countElem = articleElem.findChild('p')
-    article_url = base_url + articleElem.get('href')
-    author_article_count = int(countElem.text)
+    # articleSoup = bs4.BeautifulSoup(str(extraElms[2]))
+    # articleElem = articleSoup.select('div.meta-block a')[0]
+    # countElem = articleElem.findChild('p')
+    # article_url = base_url + articleElem.get('href')
+    # author_article_count = int(countElem.text)
+    article_url = base_url + extraElms[2].div.a['href']
+    author_article_count = int(extraElms[2].div.a.p.string)
     # 字数
-    wordSoup = bs4.BeautifulSoup(str(extraElms[3]))
-    wordElem = wordSoup.select('div.meta-block p')[0]
-    author_word_count = int(wordElem.text)
+    # wordSoup = bs4.BeautifulSoup(str(extraElms[3]))
+    # wordElem = wordSoup.select('div.meta-block p')[0]
+    # author_word_count = int(wordElem.text)
+    author_word_count = int(extraElms[3].div.p.string)
     # 点赞数
-    likeSoup = bs4.BeautifulSoup(str(extraElms[4]))
-    likeElem = likeSoup.select('div.meta-block p')[0]
-    author_like_count = int(likeElem.text)
+    # likeSoup = bs4.BeautifulSoup(str(extraElms[4]))
+    # likeElem = likeSoup.select('div.meta-block p')[0]
+    # author_like_count = int(likeElem.text)
+    author_like_count = int(extraElms[4].div.p.string)
+
     print(
         'Author: %s,\n Following: %s, \nFollowers: %s, \nArticle: %s, \nWords: %s, \nLike: %s, \nFollowing_Url: %s, \nFollower_url: %s, \nArticle_url: %s' % (
             author_name, author_following_count, author_follower_count, author_article_count, author_word_count,
@@ -117,7 +150,7 @@ def _get_author_base_info(author_url, session):
 
     author = User()
     author.like_count = author_like_count
-    author.name = author_name
+    author.name =_cut_long_str(_replace_spacial_char(author_name),100)
     author.image = author_image
     author.url = author_url
     author.following_count = author_following_count
@@ -125,7 +158,7 @@ def _get_author_base_info(author_url, session):
     author.article_count = author_article_count
     author.word_count = author_word_count
     author.id = author_url.split('/').pop()
-    author.note = _replace_spacial_char(author_note)
+    author.note =_cut_long_str(_replace_spacial_char(author_note),255)
     author.follower_url = follower_url
     author.following_url = following_url
 
@@ -170,11 +203,12 @@ def _get_author_base_info(author_url, session):
     #         allow_none_times = 20
     #         commit2db(author, session)
 
-    print('********************get author end**********************')
+    print('********************get author base info end**********************')
     time.sleep(5)
     return author
 
 def _get_author_articles(author, session):
+    print('********************get author article list start**********************')
     # 获取文章列表
     allow_none_times = 20
     pageIndex = 1
@@ -195,8 +229,10 @@ def _get_author_articles(author, session):
                 allow_none_times = 20
                 commit2db(author, session)
             pageIndex += 1
+    print('********************get author article list end**********************')
 
 def _get_author_followers(author, session):
+    print('********************get author follower info start**********************')
     # 获取关注作者的用户列表
     allow_none_times = 20
     pageIndex = 1
@@ -216,6 +252,7 @@ def _get_author_followers(author, session):
         else:
             allow_none_times = 20
             commit2db(author, session)
+    print('********************get author follower info end**********************')
 
 def commit2db(author, session):
     session.add(author)
@@ -232,6 +269,8 @@ def _parse_followers(author, parent_soup, follower_ids, session):
         follower_name = nameElem.text
         follower_id = nameElem.get('href').split('/').pop()
         if has_follower_in_mysql(author.id, follower_id, session):
+            if follower_id not in follower_ids:
+                follower_ids.append(follower_id)
             continue
         if follower_id not in follower_ids:
             follower = Follower(follower_id, follower_name, author.name)
@@ -239,6 +278,7 @@ def _parse_followers(author, parent_soup, follower_ids, session):
             author.followers.append(follower)
             print('Following: %s, %s, <------- follower: %s, %s' % (
                 author.id, author.name, follower.follower_id, follower.follower_name))
+    print('=============src: %s===new: new: %s============' % (src_len, len(followerElems)))
     return len(follower_ids) > src_len
 
 def has_follower_in_mysql(following_id, follower_id, session):
@@ -267,9 +307,9 @@ def _parse_articles(author, parent_soup, article_urls, session):
         article_id = url.split('/').pop()
         if has_article_in_mysql(article_id, session):
             continue
-        title = titleElem.text
+        title =_cut_long_str(_replace_spacial_char(titleElem.text),100)
         summaryElem = soup.find('p', class_='abstract')
-        summary = summaryElem.text.strip()
+        summary =_cut_long_str(_replace_spacial_char(summaryElem.text.strip()),255)
         readElem = soup.select('div.content div.meta  a')[0]
         read_count = int(readElem.text)
         comment_count = 0
@@ -294,6 +334,7 @@ def _parse_articles(author, parent_soup, article_urls, session):
         author.articles.append(article)
         print('title: %s, \nsummary:%s, \nurl:%s, \ntime:%s, \nread: %s, \ncomment:%s, \nlike:%s, \nmoney:%s' % (
             title, summary, url, created_at, read_count, comment_count, like_count, money_count))
+    print('=============src: %s===new: new: %s============' % (src_len, len(articleElems)))
     return len(article_urls) > src_len
 
 def has_article_in_mysql(article_id, session):
@@ -315,17 +356,17 @@ def _get_html_inner_text(url):
             html_text = f.read().decode('utf-8')
             return html_text
     except Exception as ex:
-        raise ex
+        print('<_get_html_inner_text> error: ' + str(ex))
+        return None
 
 def _get_browser_inner_text(referer):
     try:
         # if browser.current_url != referer:
         #     browser.get(referer)
         # scroll()
-        WebDriverWait(browser, 10).until(waiter(referer))
-        scroll()
-        selenium_html = browser.execute_script("return document.documentElement.outerHTML")
-        return selenium_html
+        WebDriverWait(browser, 30).until(waiter(browser, referer))
+        # scroll()
+
         # cookie = 'read_mode=day; default_font=font2; locale=zh-CN; _ga=GA1.2.1776733808.1479796358; _gid=GA1.2.898847850.1511762787; Hm_lvt_0c0e9d9b1e7d617b3e6842e85b9fb068=1511495243,1511510502,1511762788,1511832078; Hm_lpvt_0c0e9d9b1e7d617b3e6842e85b9fb068=1511850463; sensorsdata2015jssdkcross=%7B%22distinct_id%22%3A%2215f9ffaadd9d79-0fdd2a85f9cf8c-3b3e5906-2073600-15f9ffaaddab48%22%2C%22%24device_id%22%3A%2215f9ffaadd9d79-0fdd2a85f9cf8c-3b3e5906-2073600-15f9ffaaddab48%22%2C%22props%22%3A%7B%22%24latest_traffic_source_type%22%3A%22%E7%9B%B4%E6%8E%A5%E6%B5%81%E9%87%8F%22%2C%22%24latest_referrer%22%3A%22%22%2C%22%24latest_referrer_host%22%3A%22%22%2C%22%24latest_search_keyword%22%3A%22%E6%9C%AA%E5%8F%96%E5%88%B0%E5%80%BC_%E7%9B%B4%E6%8E%A5%E6%89%93%E5%BC%80%22%2C%22%24latest_utm_source%22%3A%22desktop%22%2C%22%24latest_utm_medium%22%3A%22index-users%22%2C%22%24latest_utm_campaign%22%3A%22maleskine%22%2C%22%24latest_utm_content%22%3A%22note%22%7D%7D; _m7e_session=c039f6549f3c11b8f2b1f992da6a1e82'
         #
         # cookie = ('signin_redirect=%s;' % urllib.parse.quote_plus(referer)) + cookie
@@ -350,11 +391,10 @@ def _get_browser_inner_text(referer):
         #     html_text = f.read().decode('utf8', errors='replace')
         #     return html_text
     except Exception as ex:
-        raise ex
-
-def waiter(referer):
-    if browser.current_url != referer:
-        browser.get(referer)
+        print(str(ex))
+        scroll()
+    selenium_html = browser.execute_script("return document.documentElement.outerHTML")
+    return selenium_html
 
 def scroll():
     # 第二种可以滚动到底部的方法
@@ -388,4 +428,30 @@ def scroll():
     # """)
 
 def _replace_spacial_char(src_text):
-    return src_text.replace('📷', ' ')
+    global myre
+    new_text = myre.sub(' ', src_text)
+    print(new_text)
+    return new_text
+    # src_text = src_text.replace('📷', ' ')
+    # src_text = src_text.replace('🔖', ' ')
+    # return src_text
+
+def _cut_long_str(src_text, max_len):
+    if len(src_text) < max_len:
+        return src_text
+    return ''.join(src_text[0:max_len])
+
+class waiter(object):
+    def __init__(self, browser, referer):
+        self.browser = browser
+        self.referer = referer
+
+    def __call__(self, *args, **kwargs):
+        print('*****call*****')
+        if self.browser.current_url != self.referer:
+            self.browser.get(self.referer)
+        self.browser.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+        # time.sleep(3)
+        self.browser.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+        time.sleep(3)
+        return True

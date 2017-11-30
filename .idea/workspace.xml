@@ -3,8 +3,10 @@
   <component name="ChangeListManager">
     <list default="true" id="13104a1e-bad3-41ea-9871-31c075cf10ef" name="Default" comment="">
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/README.md" afterPath="$PROJECT_DIR$/README.md" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/__init__.py" afterPath="$PROJECT_DIR$/__init__.py" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/jianshu_crawler.py" afterPath="$PROJECT_DIR$/jianshu_crawler.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/jianshu_orm.py" afterPath="$PROJECT_DIR$/jianshu_orm.py" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
@@ -14,7 +16,7 @@
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="CoverageDataManager">
-    <SUITE FILE_PATH="coverage/Crawler$__init__.coverage" NAME="__init__ Coverage Results" MODIFIED="1511948283210" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/Crawler$__init__.coverage" NAME="__init__ Coverage Results" MODIFIED="1512022919339" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
   </component>
   <component name="FavoritesManager">
     <favorites_list name="Crawler" />
@@ -24,11 +26,21 @@
       <file leaf-file-name="__init__.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/__init__.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="154">
-              <caret line="7" column="20" lean-forward="true" selection-start-line="7" selection-start-column="20" selection-end-line="7" selection-end-column="20" />
+            <state relative-caret-position="374">
+              <caret line="41" column="0" lean-forward="false" selection-start-line="41" selection-start-column="0" selection-end-line="41" selection-end-column="0" />
               <folding>
                 <element signature="e#0#29#0" expanded="true" />
               </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="re.py" pinned="false" current-in-tab="false">
+        <entry file="file://$APPLICATION_HOME_DIR$/helpers/python-skeletons/re.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="258">
+              <caret line="198" column="8" lean-forward="false" selection-start-line="198" selection-start-column="8" selection-end-line="198" selection-end-column="8" />
+              <folding />
             </state>
           </provider>
         </entry>
@@ -43,17 +55,27 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="jianshu_orm.py" pinned="false" current-in-tab="false">
+      <file leaf-file-name="jianshu_orm.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/jianshu_orm.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="368">
-              <caret line="42" column="12" lean-forward="false" selection-start-line="42" selection-start-column="12" selection-end-line="42" selection-end-column="12" />
+            <state relative-caret-position="198">
+              <caret line="9" column="0" lean-forward="false" selection-start-line="9" selection-start-column="0" selection-end-line="9" selection-end-column="0" />
               <folding>
                 <element signature="e#0#14#0" expanded="true" />
-                <marker date="1511948936549" expanded="true" signature="613:904" ph="CREATE TABLE... IF" />
-                <marker date="1511948936549" expanded="true" signature="938:1202" ph="CREATE TABLE... IF" />
-                <marker date="1511948936549" expanded="true" signature="1239:1490" ph="CREATE TABLE... IF" />
+                <marker date="1511955409787" expanded="true" signature="628:919" ph="CREATE TABLE... IF" />
+                <marker date="1511955409787" expanded="true" signature="953:1217" ph="CREATE TABLE... IF" />
+                <marker date="1511955409787" expanded="true" signature="1254:1505" ph="CREATE TABLE... IF" />
               </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="pydevd.py" pinned="false" current-in-tab="false">
+        <entry file="file://$APPLICATION_HOME_DIR$/helpers/pydev/pydevd.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="282">
+              <caret line="1598" column="0" lean-forward="false" selection-start-line="1598" selection-start-column="0" selection-end-line="1598" selection-end-column="0" />
+              <folding />
             </state>
           </provider>
         </entry>
@@ -61,8 +83,8 @@
       <file leaf-file-name="baidu_crawler.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/baidu_crawler.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="1100">
-              <caret line="59" column="25" lean-forward="false" selection-start-line="59" selection-start-column="20" selection-end-line="59" selection-end-column="25" />
+            <state relative-caret-position="154">
+              <caret line="59" column="40" lean-forward="false" selection-start-line="59" selection-start-column="40" selection-end-line="59" selection-end-column="40" />
               <folding>
                 <element signature="e#38#51#0" expanded="true" />
               </folding>
@@ -70,18 +92,16 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="jianshu_crawler.py" pinned="false" current-in-tab="true">
+      <file leaf-file-name="jianshu_crawler.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/jianshu_crawler.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="642">
-              <caret line="296" column="38" lean-forward="true" selection-start-line="296" selection-start-column="38" selection-end-line="296" selection-end-column="38" />
+            <state relative-caret-position="374">
+              <caret line="17" column="57" lean-forward="false" selection-start-line="17" selection-start-column="44" selection-end-line="17" selection-end-column="57" />
               <folding>
                 <element signature="e#219#248#0" expanded="true" />
-                <element signature="e#5258#5268#0" expanded="false" />
-                <element signature="e#8861#9796#0" expanded="false" />
-                <element signature="e#10215#12276#0" expanded="false" />
-                <element signature="e#13380#14384#0" expanded="false" />
-                <element signature="e#15779#15794#0" expanded="false" />
+                <element signature="e#6669#6679#0" expanded="false" />
+                <element signature="e#15435#15445#0" expanded="false" />
+                <element signature="e#17900#17915#0" expanded="false" />
               </folding>
             </state>
           </provider>
@@ -104,6 +124,7 @@
       <find>_get_artile_html_inner_text</find>
       <find>is none</find>
       <find>author.follower_url</find>
+      <find>_replace_spacial_char</find>
     </findStrings>
   </component>
   <component name="Git.Settings">
@@ -116,9 +137,9 @@
         <option value="$PROJECT_DIR$/google_crawler.py" />
         <option value="$PROJECT_DIR$/kuwo_crawler.py" />
         <option value="$PROJECT_DIR$/baidu_crawler.py" />
-        <option value="$PROJECT_DIR$/__init__.py" />
         <option value="$PROJECT_DIR$/jianshu_orm.py" />
         <option value="$PROJECT_DIR$/jianshu_crawler.py" />
+        <option value="$PROJECT_DIR$/__init__.py" />
       </list>
     </option>
   </component>
@@ -129,7 +150,8 @@
     <sorting>DEFINITION_ORDER</sorting>
   </component>
   <component name="ProjectFrameBounds" extendedState="6">
-    <option name="x" value="801" />
+    <option name="x" value="292" />
+    <option name="y" value="4" />
     <option name="width" value="1123" />
     <option name="height" value="1040" />
   </component>
@@ -172,6 +194,7 @@
   </component>
   <component name="PropertiesComponent">
     <property name="WebServerToolWindowFactoryState" value="false" />
+    <property name="last_opened_file_path" value="G:/python/Jianshu-master" />
   </component>
   <component name="RunDashboard">
     <option name="ruleStates">
@@ -240,14 +263,14 @@
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="true" content_ui="tabs" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.3288889" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Python Console" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.3422222" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
-      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.112222224" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
+      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.3288889" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.10010649" sideWeight="0.4941957" order="0" side_tool="false" content_ui="combo" />
       <window_info id="Database" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
-      <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
+      <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.12460064" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.09691161" sideWeight="0.5058043" order="2" side_tool="true" content_ui="tabs" />
-      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.24333334" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
+      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.24" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Data View" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Cvs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
       <window_info id="Message" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
@@ -269,42 +292,27 @@
       <breakpoints>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/jianshu_orm.py</url>
-          <line>113</line>
+          <line>115</line>
           <option name="timeStamp" value="7" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/jianshu_crawler.py</url>
-          <line>257</line>
-          <option name="timeStamp" value="34" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/jianshu_crawler.py</url>
-          <line>263</line>
+          <line>303</line>
           <option name="timeStamp" value="36" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/jianshu_crawler.py</url>
-          <line>347</line>
+          <line>388</line>
           <option name="timeStamp" value="38" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/jianshu_crawler.py</url>
-          <line>51</line>
+          <line>70</line>
           <option name="timeStamp" value="66" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/jianshu_crawler.py</url>
-          <line>304</line>
-          <option name="timeStamp" value="67" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/jianshu_crawler.py</url>
-          <line>322</line>
-          <option name="timeStamp" value="68" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/jianshu_crawler.py</url>
-          <line>167</line>
+          <line>200</line>
           <option name="timeStamp" value="75" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
@@ -319,33 +327,33 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/jianshu_orm.py</url>
-          <line>8</line>
+          <line>9</line>
           <option name="timeStamp" value="78" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/../Lib/site-packages/pymysql/connections.py</url>
-          <line>679</line>
-          <option name="timeStamp" value="81" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/jianshu_crawler.py</url>
-          <line>362</line>
+          <line>402</line>
           <option name="timeStamp" value="82" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/jianshu_crawler.py</url>
-          <line>70</line>
-          <option name="timeStamp" value="85" />
+          <line>393</line>
+          <option name="timeStamp" value="110" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/jianshu_crawler.py</url>
-          <line>55</line>
-          <option name="timeStamp" value="86" />
+          <url>file://$PROJECT_DIR$/__init__.py</url>
+          <line>29</line>
+          <option name="timeStamp" value="118" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/jianshu_crawler.py</url>
-          <line>206</line>
-          <option name="timeStamp" value="87" />
+          <url>file://$PROJECT_DIR$/__init__.py</url>
+          <line>38</line>
+          <option name="timeStamp" value="119" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/__init__.py</url>
+          <line>37</line>
+          <option name="timeStamp" value="129" />
         </line-breakpoint>
       </breakpoints>
       <default-breakpoints>
@@ -355,45 +363,20 @@
           </properties>
         </breakpoint>
       </default-breakpoints>
-      <option name="time" value="88" />
+      <option name="time" value="131" />
     </breakpoint-manager>
     <watches-manager />
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/__init__.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding>
-            <element signature="e#0#29#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/../Lib/codecs.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="6908">
-          <caret line="314" column="55" lean-forward="true" selection-start-line="314" selection-start-column="55" selection-end-line="314" selection-end-column="55" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/../Lib/site-packages/sqlalchemy/ext/declarative/base.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="8536">
-          <caret line="401" column="66" lean-forward="false" selection-start-line="401" selection-start-column="66" selection-end-line="401" selection-end-column="66" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/jianshu_orm.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="1078">
           <caret line="49" column="92" lean-forward="true" selection-start-line="49" selection-start-column="92" selection-end-line="49" selection-end-column="92" />
           <folding>
             <element signature="e#0#14#0" expanded="true" />
-            <marker date="1511948936549" expanded="true" signature="613:904" ph="CREATE TABLE... IF" />
-            <marker date="1511948936549" expanded="true" signature="938:1202" ph="CREATE TABLE... IF" />
-            <marker date="1511948936549" expanded="true" signature="1239:1490" ph="CREATE TABLE... IF" />
+            <marker date="1511955409787" expanded="true" signature="628:919" ph="CREATE TABLE... IF" />
+            <marker date="1511955409787" expanded="true" signature="953:1217" ph="CREATE TABLE... IF" />
+            <marker date="1511955409787" expanded="true" signature="1254:1505" ph="CREATE TABLE... IF" />
           </folding>
         </state>
       </provider>
@@ -412,11 +395,9 @@
           <caret line="10" column="20" lean-forward="true" selection-start-line="10" selection-start-column="20" selection-end-line="10" selection-end-column="20" />
           <folding>
             <element signature="e#219#248#0" expanded="true" />
-            <element signature="e#5258#5268#0" expanded="false" />
-            <element signature="e#8861#9796#0" expanded="false" />
-            <element signature="e#10215#12276#0" expanded="false" />
-            <element signature="e#13380#14384#0" expanded="false" />
-            <element signature="e#15779#15794#0" expanded="false" />
+            <element signature="e#6669#6679#0" expanded="false" />
+            <element signature="e#15435#15445#0" expanded="false" />
+            <element signature="e#17900#17915#0" expanded="false" />
           </folding>
         </state>
       </provider>
@@ -452,9 +433,9 @@
           <caret line="81" column="61" lean-forward="true" selection-start-line="81" selection-start-column="61" selection-end-line="81" selection-end-column="61" />
           <folding>
             <element signature="e#0#14#0" expanded="true" />
-            <marker date="1511948936549" expanded="true" signature="613:904" ph="CREATE TABLE... IF" />
-            <marker date="1511948936549" expanded="true" signature="938:1202" ph="CREATE TABLE... IF" />
-            <marker date="1511948936549" expanded="true" signature="1239:1490" ph="CREATE TABLE... IF" />
+            <marker date="1511955409787" expanded="true" signature="628:919" ph="CREATE TABLE... IF" />
+            <marker date="1511955409787" expanded="true" signature="953:1217" ph="CREATE TABLE... IF" />
+            <marker date="1511955409787" expanded="true" signature="1254:1505" ph="CREATE TABLE... IF" />
           </folding>
         </state>
       </provider>
@@ -592,6 +573,7 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="226">
           <caret line="1304" column="0" lean-forward="false" selection-start-line="1304" selection-start-column="0" selection-end-line="1304" selection-end-column="0" />
+          <folding />
         </state>
       </provider>
     </entry>
@@ -698,24 +680,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/baidu_crawler.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1100">
-          <caret line="59" column="25" lean-forward="false" selection-start-line="59" selection-start-column="20" selection-end-line="59" selection-end-column="25" />
-          <folding>
-            <element signature="e#38#51#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/../Lib/site-packages/sqlalchemy/orm/session.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="10257">
-          <caret line="1707" column="8" lean-forward="false" selection-start-line="1707" selection-start-column="8" selection-end-line="1707" selection-end-column="8" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/../Lib/site-packages/pymysql/__init__.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="232">
@@ -732,10 +696,52 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/baidu_crawler.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="154">
+          <caret line="59" column="40" lean-forward="false" selection-start-line="59" selection-start-column="40" selection-end-line="59" selection-end-column="40" />
+          <folding>
+            <element signature="e#38#51#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/../Lib/site-packages/pymysql/connections.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="254">
           <caret line="679" column="0" lean-forward="false" selection-start-line="679" selection-start-column="0" selection-end-line="679" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$APPLICATION_HOME_DIR$/helpers/pydev/pydevd.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="282">
+          <caret line="1598" column="0" lean-forward="false" selection-start-line="1598" selection-start-column="0" selection-end-line="1598" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../Lib/site-packages/sqlalchemy/orm/session.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="155">
+          <caret line="1171" column="0" lean-forward="false" selection-start-line="1171" selection-start-column="0" selection-end-line="1171" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../Lib/site-packages/selenium/webdriver/support/wait.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="221">
+          <caret line="70" column="0" lean-forward="false" selection-start-line="70" selection-start-column="0" selection-end-line="70" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$APPLICATION_HOME_DIR$/helpers/python-skeletons/re.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="258">
+          <caret line="198" column="8" lean-forward="false" selection-start-line="198" selection-start-column="8" selection-end-line="198" selection-end-column="8" />
           <folding />
         </state>
       </provider>
@@ -750,38 +756,36 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/__init__.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="154">
-          <caret line="7" column="20" lean-forward="true" selection-start-line="7" selection-start-column="20" selection-end-line="7" selection-end-column="20" />
+        <state relative-caret-position="374">
+          <caret line="41" column="0" lean-forward="false" selection-start-line="41" selection-start-column="0" selection-end-line="41" selection-end-column="0" />
           <folding>
             <element signature="e#0#29#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/jianshu_orm.py">
+    <entry file="file://$PROJECT_DIR$/jianshu_crawler.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="368">
-          <caret line="42" column="12" lean-forward="false" selection-start-line="42" selection-start-column="12" selection-end-line="42" selection-end-column="12" />
+        <state relative-caret-position="374">
+          <caret line="17" column="57" lean-forward="false" selection-start-line="17" selection-start-column="44" selection-end-line="17" selection-end-column="57" />
           <folding>
-            <element signature="e#0#14#0" expanded="true" />
-            <marker date="1511948936549" expanded="true" signature="613:904" ph="CREATE TABLE... IF" />
-            <marker date="1511948936549" expanded="true" signature="938:1202" ph="CREATE TABLE... IF" />
-            <marker date="1511948936549" expanded="true" signature="1239:1490" ph="CREATE TABLE... IF" />
+            <element signature="e#219#248#0" expanded="true" />
+            <element signature="e#6669#6679#0" expanded="false" />
+            <element signature="e#15435#15445#0" expanded="false" />
+            <element signature="e#17900#17915#0" expanded="false" />
           </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/jianshu_crawler.py">
+    <entry file="file://$PROJECT_DIR$/jianshu_orm.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="642">
-          <caret line="296" column="38" lean-forward="true" selection-start-line="296" selection-start-column="38" selection-end-line="296" selection-end-column="38" />
+        <state relative-caret-position="198">
+          <caret line="9" column="0" lean-forward="false" selection-start-line="9" selection-start-column="0" selection-end-line="9" selection-end-column="0" />
           <folding>
-            <element signature="e#219#248#0" expanded="true" />
-            <element signature="e#5258#5268#0" expanded="false" />
-            <element signature="e#8861#9796#0" expanded="false" />
-            <element signature="e#10215#12276#0" expanded="false" />
-            <element signature="e#13380#14384#0" expanded="false" />
-            <element signature="e#15779#15794#0" expanded="false" />
+            <element signature="e#0#14#0" expanded="true" />
+            <marker date="1511955409787" expanded="true" signature="628:919" ph="CREATE TABLE... IF" />
+            <marker date="1511955409787" expanded="true" signature="953:1217" ph="CREATE TABLE... IF" />
+            <marker date="1511955409787" expanded="true" signature="1254:1505" ph="CREATE TABLE... IF" />
           </folding>
         </state>
       </provider>
