@@ -5,6 +5,7 @@
 
 # http://www.jianshu.com/recommendations/users?page=1  推荐用户列表
 # http://www.jianshu.com/u/5SqsuF?order_by=shared_at&page=2 用户文章
+import threading
 from datetime import datetime
 import time
 
@@ -16,16 +17,21 @@ import urllib.parse
 import bs4
 from selenium import webdriver
 from selenium.webdriver.support.wait import WebDriverWait
+import queue
 
 base_url = 'http://www.jianshu.com'
 recommend_base_url = base_url + '/recommendations/users'
 author_article_url = 'order_by=shared_at&page=%s'
 author_base_url = base_url + '/u/'
+is_parse_all_over = False
 
 def start_crawling():
-    global browser
-    browser = webdriver.Chrome('C:\Program Files (x86)\Google\Chrome\Application\chromedriver')
+    global article_browser
+    global follower_browser
     global myre
+    article_browser = webdriver.Chrome('C:\Program Files (x86)\Google\Chrome\Application\chromedriver')
+    follower_browser = webdriver.Chrome('C:\Program Files (x86)\Google\Chrome\Application\chromedriver')
+
     try:
         # Wide UCS-4 build
         myre = re.compile(u'['
@@ -48,7 +54,12 @@ def start_crawling():
 def _get_recommend_list():
     has_data = True
     page_index = 1
-    session = jianshu_orm.DBSession()
+    # global article_thread
+    # global follower_thread
+    # article_thread = ParserThread('article_thread', _get_author_articles)
+    # follower_thread = ParserThread('follower_thread', _get_author_followers)
+    # article_thread.start()
+    # follower_thread.start()
     try:
         while has_data:
             html_text = _get_html_inner_text(recommend_base_url + '?page=' + str(page_index))
@@ -57,29 +68,44 @@ def _get_recommend_list():
             soup = bs4.BeautifulSoup(html_text, 'html.parser')
             elems = soup.select('div.col-xs-8 div.wrap')
             for elem in elems:
-                # item_soup = bs4.BeautifulSoup(str(elem), 'html.parser')
-                # aElem = item_soup.select('a')[0]
-                aElem = elem.findChild('a')
-                author_url = aElem.get('href')
+                # aElem = elem.findChild('a')
+                # author_url = aElem.get('href')
+                author_url = elem.a.get('href')
+
                 author_url = base_url + author_url
-                author = _get_author_full_info(author_url, session)
+                author = _get_author_full_info(author_url)
                 if author is not None:
                     for follower in author.followers:
                         author_url = author_base_url + follower.follower_id
-                        _get_author_full_info(author_url, session)
+                        _get_author_full_info(author_url)
+
+        global is_parse_all_over
+        is_parse_all_over = True
+
+        # article_thread.join()
+        # follower_thread.join()
     except Exception as error:
-        session.close()
         raise error
 
-def _get_author_full_info(author_url, session):
-    author = _get_author_base_info(author_url, session)
-    if (author is not None) and (not author.is_over):
-        if len(author.articles) != author.article_count:
-            _get_author_articles(author, session)
-        if len(author.followers) != author.follower_count:
-            _get_author_followers(author, session)
-        author.is_over = True
-        commit2db(author, session)
+def _get_author_full_info(author_url):
+    try:
+        session = jianshu_orm.DBSession()
+        author = _get_author_base_info(author_url, session)
+        if author is not None:
+            f = author.followers
+
+        if author is not None:
+            if len(author.articles) != author.article_count and not author.is_article_complete:
+                global article_thread
+                article_thread.add_author(author)
+                # _get_author_articles(author, session)
+            if len(author.followers) != author.follower_count and not author.is_follower_complete:
+                global follower_thread
+                follower_thread.add_author(author)
+                # _get_author_followers(author, session)
+        session.close()
+    except Exception as error:
+        raise error
     return author
 
 def _get_author_base_info(author_url, session):
@@ -111,36 +137,15 @@ def _get_author_base_info(author_url, session):
     # 作者关注的人数和url
     following_url = base_url + extraElms[0].div.a['href']
     author_following_count = int(extraElms[0].div.a.p.string)
-    # followingSoup = bs4.BeautifulSoup(str(extraElms[0]))
-    # followingElem = followingSoup.select('div.meta-block a')[0]
-    # countElem = followingElem.findChild('p')
-    # following_url = base_url + followingElem.get('href')
-    # author_following_count = int(countElem.text)
     # 关注作者的人数
-    # followerSoup = bs4.BeautifulSoup(str(extraElms[1]))
-    # followerElem = followerSoup.select('div.meta-block a')[0]
-    # countElem = followerElem.findChild('p')
-    # follower_url = base_url + followerElem.get('href')
-    # author_follower_count = int(countElem.text)
     follower_url = base_url + extraElms[1].div.a['href']
     author_follower_count = int(extraElms[1].div.a.p.string)
     # 文章数量
-    # articleSoup = bs4.BeautifulSoup(str(extraElms[2]))
-    # articleElem = articleSoup.select('div.meta-block a')[0]
-    # countElem = articleElem.findChild('p')
-    # article_url = base_url + articleElem.get('href')
-    # author_article_count = int(countElem.text)
     article_url = base_url + extraElms[2].div.a['href']
     author_article_count = int(extraElms[2].div.a.p.string)
     # 字数
-    # wordSoup = bs4.BeautifulSoup(str(extraElms[3]))
-    # wordElem = wordSoup.select('div.meta-block p')[0]
-    # author_word_count = int(wordElem.text)
     author_word_count = int(extraElms[3].div.p.string)
     # 点赞数
-    # likeSoup = bs4.BeautifulSoup(str(extraElms[4]))
-    # likeElem = likeSoup.select('div.meta-block p')[0]
-    # author_like_count = int(likeElem.text)
     author_like_count = int(extraElms[4].div.p.string)
 
     print(
@@ -150,7 +155,7 @@ def _get_author_base_info(author_url, session):
 
     author = User()
     author.like_count = author_like_count
-    author.name =_cut_long_str(_replace_spacial_char(author_name),100)
+    author.name = _cut_long_str(_replace_spacial_char(author_name), 100)
     author.image = author_image
     author.url = author_url
     author.following_count = author_following_count
@@ -158,53 +163,15 @@ def _get_author_base_info(author_url, session):
     author.article_count = author_article_count
     author.word_count = author_word_count
     author.id = author_url.split('/').pop()
-    author.note =_cut_long_str(_replace_spacial_char(author_note),255)
+    author.note = _cut_long_str(_replace_spacial_char(author_note), 255)
     author.follower_url = follower_url
     author.following_url = following_url
+    author.is_follower_complete = author_follower_count == 0
+    author.is_article_complete = author_article_count == 0
 
     commit2db(author, session)
-
-    # # 获取文章列表
-    # allow_none_times = 20
-    # pageIndex = 1
-    # if author_article_count > 0:
-    #     article_urls = []
-    #     while (len(article_urls) < author_article_count) and (allow_none_times > 0):
-    #         ret_value = True
-    #         if pageIndex == 1:
-    #             ret_value = _parse_articles(author, parent_soup, article_urls, session)
-    #         else:
-    #             next_article_url = author_url + '?' + (author_article_url % pageIndex)
-    #             next_article_html_text = _get_browser_inner_text(author_url)
-    #             parent_soup = bs4.BeautifulSoup(next_article_html_text, 'html.parser')
-    #             ret_value = _parse_articles(author, parent_soup, article_urls, session)
-    #         if not ret_value:
-    #             allow_none_times -= 1
-    #         else:
-    #             allow_none_times = 20
-    #             commit2db(author, session)
-    #         pageIndex += 1
-
-    # # 获取关注作者的用户列表
-    # allow_none_times = 20
-    # pageIndex = 1
-    # follower_ids = []
-    # while (len(follower_ids) < author_follower_count) and allow_none_times > 0:
-    #     follower_html = ''
-    #     if pageIndex == 1:
-    #         follower_html = _get_html_inner_text(follower_url)
-    #     else:
-    #         follower_html = _get_browser_inner_text(follower_url)
-    #     pageIndex += 1
-    #     parent_soup = bs4.BeautifulSoup(follower_html)
-    #     if not _parse_followers(author, parent_soup, follower_ids, session):
-    #         allow_none_times -= 1
-    #     else:
-    #         allow_none_times = 20
-    #         commit2db(author, session)
-
     print('********************get author base info end**********************')
-    time.sleep(5)
+    time.sleep(3)
     return author
 
 def _get_author_articles(author, session):
@@ -216,11 +183,9 @@ def _get_author_articles(author, session):
         article_urls = []
         while (len(article_urls) < author.article_count) and (allow_none_times > 0):
             if pageIndex == 1:
-                # ret_value = _parse_articles(author, parent_soup, article_urls, session)
                 html_text = _get_html_inner_text(author.url)
             else:
-                # next_article_url = author.url + '?' + (author_article_url % pageIndex)
-                html_text = _get_browser_inner_text(author.url)
+                html_text = _get_browser_inner_text(article_browser, author.url)
 
             parent_soup = bs4.BeautifulSoup(html_text, 'html.parser')
             if not _parse_articles(author, parent_soup, article_urls, session):
@@ -229,6 +194,10 @@ def _get_author_articles(author, session):
                 allow_none_times = 20
                 commit2db(author, session)
             pageIndex += 1
+        author.is_article_complete = True
+        if author.is_follower_complete:
+            author.is_all_complete = True
+        commit2db(author, session)
     print('********************get author article list end**********************')
 
 def _get_author_followers(author, session):
@@ -244,7 +213,7 @@ def _get_author_followers(author, session):
         if pageIndex == 1:
             follower_html = _get_html_inner_text(author.follower_url)
         else:
-            follower_html = _get_browser_inner_text(author.follower_url)
+            follower_html = _get_browser_inner_text(follower_browser, author.follower_url)
         pageIndex += 1
         parent_soup = bs4.BeautifulSoup(follower_html)
         if not _parse_followers(author, parent_soup, follower_ids, session):
@@ -252,6 +221,10 @@ def _get_author_followers(author, session):
         else:
             allow_none_times = 20
             commit2db(author, session)
+    author.is_follower_complete = True
+    if author.is_article_complete:
+        author.is_all_complete = True
+    commit2db(author, session)
     print('********************get author follower info end**********************')
 
 def commit2db(author, session):
@@ -307,9 +280,9 @@ def _parse_articles(author, parent_soup, article_urls, session):
         article_id = url.split('/').pop()
         if has_article_in_mysql(article_id, session):
             continue
-        title =_cut_long_str(_replace_spacial_char(titleElem.text),100)
+        title = _cut_long_str(_replace_spacial_char(titleElem.text), 100)
         summaryElem = soup.find('p', class_='abstract')
-        summary =_cut_long_str(_replace_spacial_char(summaryElem.text.strip()),255)
+        summary = _cut_long_str(_replace_spacial_char(summaryElem.text.strip()), 255)
         readElem = soup.select('div.content div.meta  a')[0]
         read_count = int(readElem.text)
         comment_count = 0
@@ -359,44 +332,16 @@ def _get_html_inner_text(url):
         print('<_get_html_inner_text> error: ' + str(ex))
         return None
 
-def _get_browser_inner_text(referer):
+def _get_browser_inner_text(browser, referer):
     try:
-        # if browser.current_url != referer:
-        #     browser.get(referer)
-        # scroll()
         WebDriverWait(browser, 30).until(waiter(browser, referer))
-        # scroll()
-
-        # cookie = 'read_mode=day; default_font=font2; locale=zh-CN; _ga=GA1.2.1776733808.1479796358; _gid=GA1.2.898847850.1511762787; Hm_lvt_0c0e9d9b1e7d617b3e6842e85b9fb068=1511495243,1511510502,1511762788,1511832078; Hm_lpvt_0c0e9d9b1e7d617b3e6842e85b9fb068=1511850463; sensorsdata2015jssdkcross=%7B%22distinct_id%22%3A%2215f9ffaadd9d79-0fdd2a85f9cf8c-3b3e5906-2073600-15f9ffaaddab48%22%2C%22%24device_id%22%3A%2215f9ffaadd9d79-0fdd2a85f9cf8c-3b3e5906-2073600-15f9ffaaddab48%22%2C%22props%22%3A%7B%22%24latest_traffic_source_type%22%3A%22%E7%9B%B4%E6%8E%A5%E6%B5%81%E9%87%8F%22%2C%22%24latest_referrer%22%3A%22%22%2C%22%24latest_referrer_host%22%3A%22%22%2C%22%24latest_search_keyword%22%3A%22%E6%9C%AA%E5%8F%96%E5%88%B0%E5%80%BC_%E7%9B%B4%E6%8E%A5%E6%89%93%E5%BC%80%22%2C%22%24latest_utm_source%22%3A%22desktop%22%2C%22%24latest_utm_medium%22%3A%22index-users%22%2C%22%24latest_utm_campaign%22%3A%22maleskine%22%2C%22%24latest_utm_content%22%3A%22note%22%7D%7D; _m7e_session=c039f6549f3c11b8f2b1f992da6a1e82'
-        #
-        # cookie = ('signin_redirect=%s;' % urllib.parse.quote_plus(referer)) + cookie
-        # req = urllib.request.Request(request_url)
-        # req.add_header('User-Agent',
-        #                'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.100 Safari/537.36')
-        # req.add_header('Accept', 'text/html, */*; q=0.01')
-        # # req.add_header('Accept-Encoding', 'gzip, deflate')
-        # req.add_header('Accept-Language', 'en')
-        # req.add_header('Host', 'www.jianshu.com')
-        # req.add_header('If-None-Match', 'W/"59a807c7647a85708e0ff1aac3c42259"')
-        # req.add_header('Referer', referer)
-        # req.add_header('Cookie', cookie)
-        # req.add_header('X-CSRF-Token',
-        #                'ANWhDzKxoG57AnMSgRa5Fk+OP4Tswxmb42FkYt6/t6kizZE4UZtNts42zlVRNTXwYcYs/6+31HNBT84ySWP45w==')
-        # req.add_header('X-INFINITESCROLL', 'true')
-        # req.add_header('X-Requested-With', 'XMLHttpRequest')
-        #
-        # with urllib.request.urlopen(req) as f:
-        #     print(type(f))
-        #     print('status: ', f.status, f.reason)
-        #     html_text = f.read().decode('utf8', errors='replace')
-        #     return html_text
     except Exception as ex:
         print(str(ex))
-        scroll()
+        scroll(browser)
     selenium_html = browser.execute_script("return document.documentElement.outerHTML")
     return selenium_html
 
-def scroll():
+def scroll(browser):
     # 第二种可以滚动到底部的方法
     # browser.maximize_window()
     # time.sleep(3)
@@ -432,9 +377,6 @@ def _replace_spacial_char(src_text):
     new_text = myre.sub(' ', src_text)
     print(new_text)
     return new_text
-    # src_text = src_text.replace('📷', ' ')
-    # src_text = src_text.replace('🔖', ' ')
-    # return src_text
 
 def _cut_long_str(src_text, max_len):
     if len(src_text) < max_len:
@@ -451,7 +393,38 @@ class waiter(object):
         if self.browser.current_url != self.referer:
             self.browser.get(self.referer)
         self.browser.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-        # time.sleep(3)
+        time.sleep(2)
         self.browser.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-        time.sleep(3)
+        time.sleep(2)
         return True
+
+class ParserThread(threading.Thread):
+    def __init__(self, name, func):
+        super(ParserThread, self).__init__()
+        self.parsing_queue = queue.Queue()
+        self.func = func
+        self.name = name
+
+    def run(self):
+        global is_parse_all_over
+        while not self.parsing_queue.empty() or not is_parse_all_over:
+            print('=============1=============' + self.name)
+            print('=====queue length: ' + str(self.parsing_queue.qsize()))
+            if self.parsing_queue.empty():
+                print('=============2=============' + self.name)
+                time.sleep(3)
+                continue
+            print('=============3=============' + self.name)
+            try:
+                author = self.parsing_queue.get()
+                session = jianshu_orm.DBSession()
+                try:
+                    self.func(author, session)
+                finally:
+                    session.close()
+                print('=============4=============' + self.name)
+            except Exception as error:
+                print(str(error))
+
+    def add_author(self, author):
+        self.parsing_queue.put(author)

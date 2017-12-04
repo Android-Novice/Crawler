@@ -2,7 +2,7 @@ import pymysql
 from sqlalchemy import create_engine, Column, String, Integer, DateTime, ForeignKey, Text, Index, UniqueConstraint, \
     Boolean
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship, sessionmaker
+from sqlalchemy.orm import relationship, sessionmaker, column_property
 
 def init_mysql():
     try:
@@ -48,7 +48,10 @@ class User(Base):
     image = Column(String(255))
     note = Column(String(255))
     url = Column(String(255))
-    is_over = Column(Boolean, default=False)
+    is_all_complete = Column(Boolean, default=False)
+    is_article_complete = Column(Boolean, default=False)
+    is_follower_complete = Column(Boolean, default=False)
+    is_all_complete = Column(Boolean, default=False)
 
     # articles = relationship('Article', primaryjoin='users.c.id==articles.c.author_id')
     # followers = relationship('Follower', primaryjoin='users.c.id==followers.c.following_id')
