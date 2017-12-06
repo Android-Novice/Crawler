@@ -18,6 +18,9 @@ def init_mysql():
         # create_comments_table = 'CREATE TABLE IF NOT EXISTS my_blog.comments(id varchar(50) not null primary key, user_id VARCHAR(50) NOT NULL, ' \
         #                         'user_name VARCHAR(50) NOT NULL, blog_id VARCHAR(50) NOT NULL, content TEXT NOT NULL, created_at REAL)'
         cur.execute(create_db)
+        cur.execute('SET NAMES utf8mb4')
+        cur.execute("SET CHARACTER SET utf8mb4")
+        cur.execute("SET character_set_connection=utf8mb4")
         # cur.execute(drop_table)
         # cur.execute(create_users_table)
         # cur.execute(create_blogs_table)
@@ -116,3 +119,13 @@ class Follower(Base):
 
     def __repr__(self):
         return '<Follower(follerer_id:%s, follower_name:%s)>' % (self.follower_id, self.follower_name)
+
+class ParsingItem(Base):
+    __tablename__ = 'parsingauthor'
+
+    id = Column(Integer, autoincrement=True, primary_key=True, nullable=False)
+    author_id = Column(String(100), nullable=False)
+    is_parsed = Column(Integer, default=0)
+
+    def __init__(self, author_id):
+        self.author_id = author_id

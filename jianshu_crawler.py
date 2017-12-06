@@ -9,15 +9,17 @@ import threading
 from datetime import datetime
 import time
 
+import gc
 import jianshu_orm
 import re
-from jianshu_orm import init_mysql, User, Article, Follower
+from jianshu_orm import init_mysql, User, Article, Follower, ParsingItem
 import urllib.request
 import urllib.parse
 import bs4
 from selenium import webdriver
 from selenium.webdriver.support.wait import WebDriverWait
 import queue
+from enum import Enum
 
 base_url = 'http://www.jianshu.com'
 recommend_base_url = base_url + '/recommendations/users'
@@ -28,38 +30,31 @@ is_parse_all_over = False
 def start_crawling():
     global article_browser
     global follower_browser
-    global myre
     article_browser = webdriver.Chrome('C:\Program Files (x86)\Google\Chrome\Application\chromedriver')
     follower_browser = webdriver.Chrome('C:\Program Files (x86)\Google\Chrome\Application\chromedriver')
 
-    try:
-        # Wide UCS-4 build
-        myre = re.compile(u'['
-                          u'\U0001F300-\U0001F64F'
-                          u'\U0001F680-\U0001F6FF'
-                          u'\u2600-\u2B55]+',
-                          re.UNICODE)
-    except re.error:
-        # Narrow UCS-2 build
-        myre = re.compile(u'('
-                          u'\ud83c[\udf00-\udfff]|'
-                          u'\ud83d[\udc00-\ude4f\ude80-\udeff]|'
-                          u'[\u2600-\u2B55])+',
-                          re.UNICODE)
     # browser.set_page_load_timeout(30)
     # browser.implicitly_wait(20)
     init_mysql()
+    session = jianshu_orm.DBSession()
+    list = session.query(ParsingItem).filter(ParsingItem.is_parsed == 1).all()
+    if list is not None and len(list) > 0:
+        for item in list:
+            item.is_parsed = 0
+        session.commit()
     _get_recommend_list()
 
 def _get_recommend_list():
     has_data = True
     page_index = 1
-    # global article_thread
-    # global follower_thread
-    # article_thread = ParserThread('article_thread', _get_author_articles)
-    # follower_thread = ParserThread('follower_thread', _get_author_followers)
-    # article_thread.start()
-    # follower_thread.start()
+    article_thread = ParserThread(ThreadKind.Article, _get_author_articles)
+    follower_thread = ParserThread(ThreadKind.Follower, _get_author_followers)
+    author_thread_1 = AuthorThread(_get_author_base_info)
+    author_thread_2 = AuthorThread(_get_author_base_info)
+    article_thread.start()
+    follower_thread.start()
+    author_thread_1.start()
+    author_thread_2.start()
     try:
         while has_data:
             html_text = _get_html_inner_text(recommend_base_url + '?page=' + str(page_index))
@@ -68,55 +63,42 @@ def _get_recommend_list():
             soup = bs4.BeautifulSoup(html_text, 'html.parser')
             elems = soup.select('div.col-xs-8 div.wrap')
             for elem in elems:
-                # aElem = elem.findChild('a')
-                # author_url = aElem.get('href')
                 author_url = elem.a.get('href')
-
-                author_url = base_url + author_url
-                author = _get_author_full_info(author_url)
-                if author is not None:
-                    for follower in author.followers:
-                        author_url = author_base_url + follower.follower_id
-                        _get_author_full_info(author_url)
+                author_id = author_url.split('/').pop()
+                _get_author_full_info(author_id)
+            page_index += 1
+            time.sleep(10)
+            gc.collect()
 
         global is_parse_all_over
         is_parse_all_over = True
 
-        # article_thread.join()
-        # follower_thread.join()
+        article_thread.join()
+        follower_thread.join()
+        author_thread_1.join()
+        author_thread_2.join()
     except Exception as error:
         raise error
 
-def _get_author_full_info(author_url):
+def _get_author_full_info(author_id):
     try:
         session = jianshu_orm.DBSession()
-        author = _get_author_base_info(author_url, session)
-        if author is not None:
-            f = author.followers
-
-        if author is not None:
-            if len(author.articles) != author.article_count and not author.is_article_complete:
-                global article_thread
-                article_thread.add_author(author)
-                # _get_author_articles(author, session)
-            if len(author.followers) != author.follower_count and not author.is_follower_complete:
-                global follower_thread
-                follower_thread.add_author(author)
-                # _get_author_followers(author, session)
+        author = _get_author_base_info(author_id, session)
         session.close()
+        del session
     except Exception as error:
         raise error
     return author
 
-def _get_author_base_info(author_url, session):
+def _get_author_base_info(author_id, session):
     print('********************get author base info start**********************')
-    author_id = author_url.split('/').pop()
     if author_id is None:
         return None
-    list = session.query(User).filter(User.id == author_id).all()
-    if list is not None and len(list) > 0:
-        return list[0]
+    item = session.query(User).filter(User.id == author_id).first()
+    if item is not None:
+        return item
 
+    author_url = author_base_url + author_id
     print('author_url: ' + author_url)
     html_text = _get_html_inner_text(author_url)
     if html_text is None:
@@ -207,7 +189,6 @@ def _get_author_followers(author, session):
     pageIndex = 1
     follower_ids = []
     while (len(follower_ids) < author.follower_count) and allow_none_times > 0:
-        follower_html = ''
         if author.follower_url is None:
             author.follower_url = 'http://www.jianshu.com/users/%s/followers' % author.id
         if pageIndex == 1:
@@ -241,27 +222,32 @@ def _parse_followers(author, parent_soup, follower_ids, session):
         nameElem = elem.find('a', class_='name')
         follower_name = nameElem.text
         follower_id = nameElem.get('href').split('/').pop()
-        if has_follower_in_mysql(author.id, follower_id, session):
+
+        if author.id is None or follower_id is None:
+            continue
+        item = session.query(Follower).filter(
+            Follower.follower_id == follower_id and Follower.following_id == author.id).first()
+        if item is not None:
             if follower_id not in follower_ids:
                 follower_ids.append(follower_id)
             continue
+
         if follower_id not in follower_ids:
             follower = Follower(follower_id, follower_name, author.name)
             follower_ids.append(follower_id)
             author.followers.append(follower)
+
+            _add_parsing_item(follower_id, session)
             print('Following: %s, %s, <------- follower: %s, %s' % (
                 author.id, author.name, follower.follower_id, follower.follower_name))
     print('=============src: %s===new: new: %s============' % (src_len, len(followerElems)))
     return len(follower_ids) > src_len
 
-def has_follower_in_mysql(following_id, follower_id, session):
-    if following_id is None or follower_id is None:
-        return True
-    list = session.query(Follower).filter(
-        Follower.follower_id == follower_id and Follower.following_id == following_id).all()
-    if list is None or len(list) == 0:
-        return False
-    return True
+def _add_parsing_item(follower_id, session):
+    item = session.query(jianshu_orm.ParsingItem).filter(jianshu_orm.ParsingItem.author_id == follower_id).first()
+    if item is None:
+        item = jianshu_orm.ParsingItem(follower_id)
+        session.add(item)
 
 def _parse_articles(author, parent_soup, article_urls, session):
     src_len = len(article_urls)
@@ -278,7 +264,10 @@ def _parse_articles(author, parent_soup, article_urls, session):
         article_urls.append(href)
         url = base_url + href
         article_id = url.split('/').pop()
-        if has_article_in_mysql(article_id, session):
+        if article_id is None:
+            continue
+        item = session.query(Article).filter(Article.id == article_id).first()
+        if item is not None:
             continue
         title = _cut_long_str(_replace_spacial_char(titleElem.text), 100)
         summaryElem = soup.find('p', class_='abstract')
@@ -309,14 +298,6 @@ def _parse_articles(author, parent_soup, article_urls, session):
             title, summary, url, created_at, read_count, comment_count, like_count, money_count))
     print('=============src: %s===new: new: %s============' % (src_len, len(articleElems)))
     return len(article_urls) > src_len
-
-def has_article_in_mysql(article_id, session):
-    if article_id is None:
-        return True
-    list = session.query(Article).filter(Article.id == article_id).all()
-    if list is None or len(list) == 0:
-        return False
-    return True
 
 def _get_html_inner_text(url):
     try:
@@ -373,9 +354,15 @@ def scroll(browser):
     # """)
 
 def _replace_spacial_char(src_text):
-    global myre
-    new_text = myre.sub(' ', src_text)
-    print(new_text)
+    str_list = list(src_text)
+    index = -1
+    for i in str_list:
+        index += 1
+        if ord(i) > 120000:
+            print('****************************************************************src: %s, ord: %s' % (i, ord(i)))
+            str_list[index] = ''
+    new_text = ''.join(str_list)
+    del str_list
     return new_text
 
 def _cut_long_str(src_text, max_len):
@@ -398,33 +385,67 @@ class waiter(object):
         time.sleep(2)
         return True
 
+class ThreadKind(Enum):
+    Article = 1
+    Follower = 2
+
 class ParserThread(threading.Thread):
-    def __init__(self, name, func):
+    def __init__(self, thread_kind, func):
         super(ParserThread, self).__init__()
-        self.parsing_queue = queue.Queue()
         self.func = func
-        self.name = name
+        self.thread_kind = thread_kind
+        if self.thread_kind == ThreadKind.Follower:
+            self.name = 'follower_thread'
+        else:
+            self.name = 'article_thread'
 
     def run(self):
         global is_parse_all_over
-        while not self.parsing_queue.empty() or not is_parse_all_over:
+        while not is_parse_all_over:
             print('=============1=============' + self.name)
-            print('=====queue length: ' + str(self.parsing_queue.qsize()))
-            if self.parsing_queue.empty():
-                print('=============2=============' + self.name)
-                time.sleep(3)
-                continue
-            print('=============3=============' + self.name)
             try:
-                author = self.parsing_queue.get()
                 session = jianshu_orm.DBSession()
-                try:
-                    self.func(author, session)
-                finally:
-                    session.close()
+                if self.thread_kind == ThreadKind.Follower:
+                    author = session.query(User).filter(User.is_follower_complete == 0).first()
+                else:
+                    author = session.query(User).filter(User.is_article_complete == 0).first()
+                if author is None:
+                    time.sleep(3)
+                    continue
+                self.func(author, session)
                 print('=============4=============' + self.name)
             except Exception as error:
-                print(str(error))
+                raise error
+            finally:
+                session.close()
+                del session
+                del author
 
-    def add_author(self, author):
-        self.parsing_queue.put(author)
+class AuthorThread(threading.Thread):
+    def __init__(self, func):
+        super(AuthorThread, self).__init__()
+        self.func = func
+        self.name = 'author_thread'
+
+    def run(self):
+        global is_parse_all_over
+        while not is_parse_all_over:
+            print('=============1=============' + self.name)
+            try:
+                session = jianshu_orm.DBSession()
+                item = session.query(ParsingItem).filter(ParsingItem.is_parsed == 0).first()
+                if item is None:
+                    time.sleep(3)
+                    continue
+                item.is_parsed = 1
+                session.commit()
+                self.func(item.author_id, session)
+                print('=============2=============' + self.name)
+                item.is_parsed = 2
+                session.commit()
+            except Exception as error:
+                raise error
+            finally:
+                session.close()
+                del session
+                del item
