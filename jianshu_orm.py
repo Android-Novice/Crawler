@@ -34,7 +34,7 @@ def init_mysql():
 
 engine = create_engine('mysql+pymysql://root:123456@127.0.0.1:3306/jianshuwebsite?charset=utf8', echo=False)
 Base = declarative_base()
-DBSession = sessionmaker(bind=engine)
+DBSession = sessionmaker(bind=engine, autoflush=True)
 
 def get_db_session():
     return DBSession()

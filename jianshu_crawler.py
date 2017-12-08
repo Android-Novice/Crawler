@@ -89,6 +89,7 @@ def _get_recommend_list():
         author_thread_2.join()
         author_thread_3.join()
     except Exception as error:
+        logging.error('<Exception> _get_recommend_list: \n')
         logging.error(str(error))
 
 def _get_author_full_info(author_id):
@@ -99,17 +100,18 @@ def _get_author_full_info(author_id):
         del session
         return author
     except Exception as error:
+        logging.error('<Exception> get-author-full-info:\n')
         logging.error(str(error))
     return None
 
 def _get_author_base_info(author_id, session):
-    print('********************get author base info start**********************')
     if author_id is None:
         return None
     item = session.query(User).filter(User.id == author_id).first()
     if item is not None:
         return item
 
+    print('********************get author base info start**********************')
     author_url = author_base_url + author_id
     print('author_url: ' + author_url)
     html_text = _get_html_inner_text(author_url)
@@ -233,7 +235,8 @@ def _get_author_followers(author, session):
 def _parse_followers(author, parent_soup, follower_ids, session):
     src_len = len(follower_ids)
     followerElems = parent_soup.select('div#list-container ul.user-list li')
-    print('=============src: %s===new: new: %s============' % (src_len, len(followerElems)))
+    print('======Follower=======src: %s===new: %s=====show:%s=======' % (
+        src_len, len(followerElems), author.follower_count))
     if len(followerElems) <= src_len:
         return False
     for elem in followerElems[src_len:]:
@@ -261,7 +264,9 @@ def _parse_followers(author, parent_soup, follower_ids, session):
             print('Following: %s, %s, <------- follower: %s, %s' % (
                 author.id, author.name, follower.follower_id, follower.follower_name))
             del follower
-    print('=============src: %s===new: new: %s============' % (src_len, len(followerElems)))
+    print('======Follower=======src: %s===new: %s=====show:%s=======' % (
+        src_len, len(followerElems), author.follower_count))
+    del followerElems
     return len(follower_ids) > src_len
 
 def _add_parsing_item(follower_id, session):
@@ -273,8 +278,10 @@ def _add_parsing_item(follower_id, session):
 def _parse_articles(author, parent_soup, article_urls, session):
     src_len = len(article_urls)
     articleElems = parent_soup.select('div#list-container ul.note-list li')
-    print('=============src: %s===new: new: %s============' % (src_len, len(articleElems)))
+    print('====Article=========src: %s===new: %s======show: %s======' % (
+    src_len, len(articleElems), author.article_count))
     if len(articleElems) <= src_len:
+        del articleElems
         return False
     for elem in articleElems[src_len:]:
         soup = bs4.BeautifulSoup(str(elem))
@@ -320,10 +327,13 @@ def _parse_articles(author, parent_soup, article_urls, session):
                           like_count, money_count, author.name)
         article.author_id = author.id
         session.add(article)
+        del soup
         # author.articles.append(article)
         print('title: %s, \nsummary:%s, \nurl:%s, \ntime:%s, \nread: %s, \ncomment:%s, \nlike:%s, \nmoney:%s' % (
             title, summary, url, created_at, read_count, comment_count, like_count, money_count))
-    print('=============src: %s===new: new: %s============' % (src_len, len(articleElems)))
+    print('====Article=========src: %s===new: %s======show: %s======' % (
+        src_len, len(articleElems), author.article_count))
+    del articleElems
     return len(article_urls) > src_len
 
 def _get_html_inner_text(url):
@@ -422,6 +432,7 @@ def delete_temp_folders():
             if os.path.isdir(sub) and 'scoped_dir' in sub:
                 shutil.rmtree(sub, True)
     except Exception as error:
+        logging.error('<Exception> get-delete_temp_folders:\n')
         logging.error(str(error))
 
 class ThreadKind(Enum):
@@ -440,20 +451,23 @@ class ParserThread(threading.Thread):
 
     def run(self):
         global is_parse_all_over
-        while not is_parse_all_over:
+        parsing_item_is_none = False
+        while not is_parse_all_over or not parsing_item_is_none:
             print('=============1=============' + self.name)
             try:
                 session = jianshu_orm.get_db_session()
                 if self.thread_kind == ThreadKind.Follower:
-                    author = session.query(User).filter(User.is_follower_complete == 0).first()
+                    author = session.query(User).filter(User.is_follower_complete == 0).limit(1).first()
                 else:
-                    author = session.query(User).filter(User.is_article_complete == 0).first()
+                    author = session.query(User).filter(User.is_article_complete == 0).limit(1).first()
+                parsing_item_is_none = author is None
                 if author is None:
                     time.sleep(3)
                     continue
                 self.func(author, session)
                 print('=============4=============' + self.name)
             except Exception as error:
+                logging.error('<Exception> ParserThread: %s\n' % self.name)
                 logging.error(str(error))
             finally:
                 session.close()
@@ -469,12 +483,14 @@ class AuthorThread(threading.Thread):
 
     def run(self):
         global is_parse_all_over
-        while not is_parse_all_over:
+        parsing_author_is_none = False
+        while not is_parse_all_over or not parsing_author_is_none:
             print('=============1=============' + self.name)
             try:
                 session = jianshu_orm.get_db_session()
                 self.rlock.acquire()
-                item = session.query(ParsingItem).filter(ParsingItem.is_parsed == 0).first()
+                item = session.query(ParsingItem).filter(ParsingItem.is_parsed == 0).limit(1).first()
+                parsing_author_is_none = item is None
                 if item is None:
                     time.sleep(3)
                     self.rlock.release()
@@ -489,6 +505,7 @@ class AuthorThread(threading.Thread):
                 session.flush()
                 session.commit()
             except Exception as error:
+                logging.error('<Exception> AuthorThread: %s\n' % self.name)
                 logging.error(str(error))
             finally:
                 session.close()
