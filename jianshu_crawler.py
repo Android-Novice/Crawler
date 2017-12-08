@@ -5,20 +5,21 @@
 
 # http://www.jianshu.com/recommendations/users?page=1  推荐用户列表
 # http://www.jianshu.com/u/5SqsuF?order_by=shared_at&page=2 用户文章
+import shutil
 import threading
 from datetime import datetime
 import time
-
+import logging
 import gc
+import random
 import jianshu_orm
-import re
+import os
 from jianshu_orm import init_mysql, User, Article, Follower, ParsingItem
 import urllib.request
 import urllib.parse
 import bs4
 from selenium import webdriver
 from selenium.webdriver.support.wait import WebDriverWait
-import queue
 from enum import Enum
 
 base_url = 'http://www.jianshu.com'
@@ -28,6 +29,10 @@ author_base_url = base_url + '/u/'
 is_parse_all_over = False
 
 def start_crawling():
+    logging.debug('start crawling....')
+
+    delete_temp_folders()
+
     global article_browser
     global follower_browser
     article_browser = webdriver.Chrome('C:\Program Files (x86)\Google\Chrome\Application\chromedriver')
@@ -36,11 +41,12 @@ def start_crawling():
     # browser.set_page_load_timeout(30)
     # browser.implicitly_wait(20)
     init_mysql()
-    session = jianshu_orm.DBSession()
+    session = jianshu_orm.get_db_session()
     list = session.query(ParsingItem).filter(ParsingItem.is_parsed == 1).all()
     if list is not None and len(list) > 0:
         for item in list:
             item.is_parsed = 0
+        session.flush()
         session.commit()
     _get_recommend_list()
 
@@ -49,12 +55,15 @@ def _get_recommend_list():
     page_index = 1
     article_thread = ParserThread(ThreadKind.Article, _get_author_articles)
     follower_thread = ParserThread(ThreadKind.Follower, _get_author_followers)
-    author_thread_1 = AuthorThread(_get_author_base_info)
-    author_thread_2 = AuthorThread(_get_author_base_info)
+    rlock = threading.RLock()
+    author_thread_1 = AuthorThread(_get_author_base_info, rlock)
+    author_thread_2 = AuthorThread(_get_author_base_info, rlock)
+    author_thread_3 = AuthorThread(_get_author_base_info, rlock)
     article_thread.start()
     follower_thread.start()
     author_thread_1.start()
     author_thread_2.start()
+    author_thread_3.start()
     try:
         while has_data:
             html_text = _get_html_inner_text(recommend_base_url + '?page=' + str(page_index))
@@ -66,6 +75,7 @@ def _get_recommend_list():
                 author_url = elem.a.get('href')
                 author_id = author_url.split('/').pop()
                 _get_author_full_info(author_id)
+            del html_text, soup, elems
             page_index += 1
             time.sleep(10)
             gc.collect()
@@ -77,18 +87,20 @@ def _get_recommend_list():
         follower_thread.join()
         author_thread_1.join()
         author_thread_2.join()
+        author_thread_3.join()
     except Exception as error:
-        raise error
+        logging.error(str(error))
 
 def _get_author_full_info(author_id):
     try:
-        session = jianshu_orm.DBSession()
+        session = jianshu_orm.get_db_session()
         author = _get_author_base_info(author_id, session)
         session.close()
         del session
+        return author
     except Exception as error:
-        raise error
-    return author
+        logging.error(str(error))
+    return None
 
 def _get_author_base_info(author_id, session):
     print('********************get author base info start**********************')
@@ -151,15 +163,17 @@ def _get_author_base_info(author_id, session):
     author.is_follower_complete = author_follower_count == 0
     author.is_article_complete = author_article_count == 0
 
-    commit2db(author, session)
+    session.add(author)
+    session.flush()
+    session.commit()
+    time.sleep(2)
     print('********************get author base info end**********************')
-    time.sleep(3)
     return author
 
 def _get_author_articles(author, session):
     print('********************get author article list start**********************')
     # 获取文章列表
-    allow_none_times = 20
+    allow_none_times = 15
     pageIndex = 1
     if author.article_count > 0:
         article_urls = []
@@ -172,20 +186,24 @@ def _get_author_articles(author, session):
             parent_soup = bs4.BeautifulSoup(html_text, 'html.parser')
             if not _parse_articles(author, parent_soup, article_urls, session):
                 allow_none_times -= 1
+                time.sleep(1)
             else:
-                allow_none_times = 20
-                commit2db(author, session)
+                allow_none_times = 15
+                session.flush()
+                session.commit()
             pageIndex += 1
+            del html_text, parent_soup
         author.is_article_complete = True
         if author.is_follower_complete:
             author.is_all_complete = True
-        commit2db(author, session)
+        session.flush()
+        session.commit()
     print('********************get author article list end**********************')
 
 def _get_author_followers(author, session):
     print('********************get author follower info start**********************')
     # 获取关注作者的用户列表
-    allow_none_times = 20
+    allow_none_times = 15
     pageIndex = 1
     follower_ids = []
     while (len(follower_ids) < author.follower_count) and allow_none_times > 0:
@@ -199,18 +217,18 @@ def _get_author_followers(author, session):
         parent_soup = bs4.BeautifulSoup(follower_html)
         if not _parse_followers(author, parent_soup, follower_ids, session):
             allow_none_times -= 1
+            time.sleep(1)
         else:
-            allow_none_times = 20
-            commit2db(author, session)
+            allow_none_times = 15
+            session.flush()
+            session.commit()
+        del parent_soup, follower_html
     author.is_follower_complete = True
     if author.is_article_complete:
         author.is_all_complete = True
-    commit2db(author, session)
-    print('********************get author follower info end**********************')
-
-def commit2db(author, session):
-    session.add(author)
+    session.flush()
     session.commit()
+    print('********************get author follower info end**********************')
 
 def _parse_followers(author, parent_soup, follower_ids, session):
     src_len = len(follower_ids)
@@ -220,7 +238,7 @@ def _parse_followers(author, parent_soup, follower_ids, session):
         return False
     for elem in followerElems[src_len:]:
         nameElem = elem.find('a', class_='name')
-        follower_name = nameElem.text
+        follower_name = _replace_spacial_char(nameElem.text)
         follower_id = nameElem.get('href').split('/').pop()
 
         if author.id is None or follower_id is None:
@@ -235,11 +253,14 @@ def _parse_followers(author, parent_soup, follower_ids, session):
         if follower_id not in follower_ids:
             follower = Follower(follower_id, follower_name, author.name)
             follower_ids.append(follower_id)
-            author.followers.append(follower)
+            # author.followers.append(follower)
+            follower.following_id = author.id
+            session.add(follower)
 
             _add_parsing_item(follower_id, session)
             print('Following: %s, %s, <------- follower: %s, %s' % (
                 author.id, author.name, follower.follower_id, follower.follower_name))
+            del follower
     print('=============src: %s===new: new: %s============' % (src_len, len(followerElems)))
     return len(follower_ids) > src_len
 
@@ -271,9 +292,14 @@ def _parse_articles(author, parent_soup, article_urls, session):
             continue
         title = _cut_long_str(_replace_spacial_char(titleElem.text), 100)
         summaryElem = soup.find('p', class_='abstract')
+        if summaryElem is None:
+            continue
         summary = _cut_long_str(_replace_spacial_char(summaryElem.text.strip()), 255)
         readElem = soup.select('div.content div.meta  a')[0]
-        read_count = int(readElem.text)
+        if readElem.text.strip().isdecimal():
+            read_count = int(readElem.text)
+        else:
+            continue
         comment_count = 0
         commentElem = readElem.find_next_sibling('a')
         if commentElem != None:
@@ -291,9 +317,10 @@ def _parse_articles(author, parent_soup, article_urls, session):
         # 2017 - 11 - 27 T23:36:33 + 08: 00
         created_at = datetime.strptime(time_text, '%Y-%m-%dT%H:%M:%S+08:00')
         article = Article(article_id, title, summary, url, created_at, read_count, comment_count,
-                          like_count,
-                          money_count, author.name)
-        author.articles.append(article)
+                          like_count, money_count, author.name)
+        article.author_id = author.id
+        session.add(article)
+        # author.articles.append(article)
         print('title: %s, \nsummary:%s, \nurl:%s, \ntime:%s, \nread: %s, \ncomment:%s, \nlike:%s, \nmoney:%s' % (
             title, summary, url, created_at, read_count, comment_count, like_count, money_count))
     print('=============src: %s===new: new: %s============' % (src_len, len(articleElems)))
@@ -308,6 +335,7 @@ def _get_html_inner_text(url):
             print(type(f))
             print('status: ', f.status, f.reason)
             html_text = f.read().decode('utf-8')
+            del req
             return html_text
     except Exception as ex:
         print('<_get_html_inner_text> error: ' + str(ex))
@@ -385,6 +413,17 @@ class waiter(object):
         time.sleep(2)
         return True
 
+def delete_temp_folders():
+    try:
+        root = os.path.dirname(os.getenv('appdata'))
+        temp_dir = os.path.join(root, r'local\temp')
+        for sub in os.listdir(temp_dir):
+            sub = os.path.join(temp_dir, sub)
+            if os.path.isdir(sub) and 'scoped_dir' in sub:
+                shutil.rmtree(sub, True)
+    except Exception as error:
+        logging.error(str(error))
+
 class ThreadKind(Enum):
     Article = 1
     Follower = 2
@@ -404,7 +443,7 @@ class ParserThread(threading.Thread):
         while not is_parse_all_over:
             print('=============1=============' + self.name)
             try:
-                session = jianshu_orm.DBSession()
+                session = jianshu_orm.get_db_session()
                 if self.thread_kind == ThreadKind.Follower:
                     author = session.query(User).filter(User.is_follower_complete == 0).first()
                 else:
@@ -415,16 +454,17 @@ class ParserThread(threading.Thread):
                 self.func(author, session)
                 print('=============4=============' + self.name)
             except Exception as error:
-                raise error
+                logging.error(str(error))
             finally:
                 session.close()
                 del session
                 del author
 
 class AuthorThread(threading.Thread):
-    def __init__(self, func):
+    def __init__(self, func, rlock):
         super(AuthorThread, self).__init__()
         self.func = func
+        self.rlock = rlock
         self.name = 'author_thread'
 
     def run(self):
@@ -432,19 +472,24 @@ class AuthorThread(threading.Thread):
         while not is_parse_all_over:
             print('=============1=============' + self.name)
             try:
-                session = jianshu_orm.DBSession()
+                session = jianshu_orm.get_db_session()
+                self.rlock.acquire()
                 item = session.query(ParsingItem).filter(ParsingItem.is_parsed == 0).first()
                 if item is None:
                     time.sleep(3)
+                    self.rlock.release()
                     continue
                 item.is_parsed = 1
+                session.flush()
                 session.commit()
+                self.rlock.release()
                 self.func(item.author_id, session)
                 print('=============2=============' + self.name)
                 item.is_parsed = 2
+                session.flush()
                 session.commit()
             except Exception as error:
-                raise error
+                logging.error(str(error))
             finally:
                 session.close()
                 del session

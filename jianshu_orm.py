@@ -32,9 +32,12 @@ def init_mysql():
     except Exception as e:
         raise
 
-engine = create_engine('mysql+pymysql://root:123456@127.0.0.1:3306/jianshuwebsite?charset=utf8', echo=True)
+engine = create_engine('mysql+pymysql://root:123456@127.0.0.1:3306/jianshuwebsite?charset=utf8', echo=False)
 Base = declarative_base()
 DBSession = sessionmaker(bind=engine)
+
+def get_db_session():
+    return DBSession()
 
 class User(Base):
     __tablename__ = 'users'

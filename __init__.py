@@ -3,6 +3,9 @@ import baidu_crawler
 import jianshu_orm
 import jianshu_crawler
 from jianshu_crawler import start_crawling
+import logging
+logging.basicConfig(filename='D:\crawler.log', level=logging.DEBUG, format='%(asctime)s - %(levelname)s -%(message)s',datefmt='%m/%d/%Y %H:%M:%S %p')
+logging.debug('Test....')
 
 def filter_emoj(src_text):
     print(len(src_text))

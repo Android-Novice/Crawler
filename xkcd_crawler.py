@@ -4,7 +4,7 @@ import os
 import bs4
 import requests
 import logging
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s -%(message)s')
+# logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s -%(message)s')
 ##logging.basicConfig(filename=r'D:\python test files\firstlog.log', level=logging.DEBUG, format='%(asctime)s - %(levelname)s -%(message)s')
 ##logging.debug('start of program')
 def comicPicsCrawling():

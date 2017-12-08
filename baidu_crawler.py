@@ -11,7 +11,7 @@ import os
 import requests
 import time
 
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s -%(message)s')
+# logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s -%(message)s')
 ##logging.basicConfig(filename=r'D:\python test files\firstlog.log', level=logging.DEBUG, format='%(asctime)s - %(levelname)s -%(message)s')
 ##logging.debug('start of program')
 
