@@ -24,19 +24,19 @@ from enum import Enum
 
 base_url = 'http://www.jianshu.com'
 recommend_base_url = base_url + '/recommendations/users'
-author_article_url = 'order_by=shared_at&page=%s'
+author_article_url = base_url + '/u/%s?order_by=shared_at&page=%s'
+author_follower_url = base_url + '/users/%s/followers?page=%s'
 author_base_url = base_url + '/u/'
 is_parse_all_over = False
 
 def start_crawling():
     logging.debug('start crawling....')
-
     delete_temp_folders()
 
-    global article_browser
-    global follower_browser
-    article_browser = webdriver.Chrome('C:\Program Files (x86)\Google\Chrome\Application\chromedriver')
-    follower_browser = webdriver.Chrome('C:\Program Files (x86)\Google\Chrome\Application\chromedriver')
+    # global article_browser
+    # global follower_browser
+    # article_browser = webdriver.Chrome('C:\Program Files (x86)\Google\Chrome\Application\chromedriver')
+    # follower_browser = webdriver.Chrome('C:\Program Files (x86)\Google\Chrome\Application\chromedriver')
 
     # browser.set_page_load_timeout(30)
     # browser.implicitly_wait(20)
@@ -64,6 +64,7 @@ def _get_recommend_list():
     author_thread_1.start()
     author_thread_2.start()
     author_thread_3.start()
+
     try:
         while has_data:
             html_text = _get_html_inner_text(recommend_base_url + '?page=' + str(page_index))
@@ -97,6 +98,7 @@ def _get_author_full_info(author_id):
         session = jianshu_orm.get_db_session()
         author = _get_author_base_info(author_id, session)
         session.close()
+        session.prune()
         del session
         return author
     except Exception as error:
@@ -174,6 +176,34 @@ def _get_author_base_info(author_id, session):
 
 def _get_author_articles(author, session):
     print('********************get author article list start**********************')
+    if author.article_count > 0:
+        pageIndex = 1
+        article_urls = []
+        while True:
+            url = author_article_url % (author.id, pageIndex)
+            html_text = _get_html_inner_text(url)
+            if html_text is None:
+                break
+            parent_soup = bs4.BeautifulSoup(html_text, 'html.parser')
+            if not _parse_articles(author, parent_soup, article_urls, session):
+                break
+            else:
+                session.flush()
+                session.commit()
+                time.sleep(random.random())
+            pageIndex += 1
+
+        if author.article_count < len(article_urls):
+            author.article_count = len(article_urls)
+    author.is_article_complete = True
+    if author.is_follower_complete:
+        author.is_all_complete = True
+    session.flush()
+    session.commit()
+    print('********************get author article list end**********************')
+
+def _get_author_articles_backup(author, session):
+    print('********************get author article list start**********************')
     # 获取文章列表
     allow_none_times = 15
     pageIndex = 1
@@ -205,6 +235,34 @@ def _get_author_articles(author, session):
 def _get_author_followers(author, session):
     print('********************get author follower info start**********************')
     # 获取关注作者的用户列表
+    if author.follower_count > 0:
+        pageIndex = 1
+        follower_ids = []
+        while True:
+            url = author_follower_url % (author.id, pageIndex)
+            follower_html = _get_html_inner_text(url)
+            if follower_html is None:
+                break
+            parent_soup = bs4.BeautifulSoup(follower_html, 'html.parser')
+            if not _parse_followers(author, parent_soup, follower_ids, session):
+                break
+            else:
+                session.flush()
+                session.commit()
+                time.sleep(random.random())
+            pageIndex += 1
+        if author.follower_count < len(follower_ids):
+            author.follower_count = len(follower_ids)
+    author.is_follower_complete = True
+    if author.is_article_complete:
+        author.is_all_complete = True
+    session.flush()
+    session.commit()
+    print('********************get author follower info end**********************')
+
+def _get_author_followers_backup(author, session):
+    print('********************get author follower info start**********************')
+    # 获取关注作者的用户列表
     allow_none_times = 15
     pageIndex = 1
     follower_ids = []
@@ -216,7 +274,7 @@ def _get_author_followers(author, session):
         else:
             follower_html = _get_browser_inner_text(follower_browser, author.follower_url)
         pageIndex += 1
-        parent_soup = bs4.BeautifulSoup(follower_html)
+        parent_soup = bs4.BeautifulSoup(follower_html, 'html.parser')
         if not _parse_followers(author, parent_soup, follower_ids, session):
             allow_none_times -= 1
             time.sleep(1)
@@ -232,7 +290,7 @@ def _get_author_followers(author, session):
     session.commit()
     print('********************get author follower info end**********************')
 
-def _parse_followers(author, parent_soup, follower_ids, session):
+def _parse_followers_backup(author, parent_soup, follower_ids, session):
     src_len = len(follower_ids)
     followerElems = parent_soup.select('div#list-container ul.user-list li')
     print('======Follower=======src: %s===new: %s=====show:%s=======' % (
@@ -269,6 +327,35 @@ def _parse_followers(author, parent_soup, follower_ids, session):
     del followerElems
     return len(follower_ids) > src_len
 
+def _parse_followers(author, parent_soup, follower_ids, session):
+    src_len = len(follower_ids)
+    followerElems = parent_soup.select('div#list-container ul.user-list li')
+    print('======Follower=======src: %s===new: %s=====show:%s=====Name:%s %s==' % (
+        src_len, len(followerElems), author.follower_count, author.name, author.id))
+    for elem in followerElems:
+        nameElem = elem.find('a', class_='name')
+        follower_id = nameElem.get('href').split('/').pop()
+        if author.id is None or follower_id is None:
+            continue
+        if follower_id in follower_ids:
+            continue
+        follower_ids.append(follower_id)
+        item = session.query(Follower).filter(
+            Follower.follower_id == follower_id and Follower.following_id == author.id).first()
+        if item is not None:
+            continue
+
+        follower_name = _replace_spacial_char(nameElem.text)
+        follower = Follower(follower_id, follower_name, author.name)
+        follower.following_id = author.id
+        session.add(follower)
+        _add_parsing_item(follower_id, session)
+        print('Following: %s, %s, <------- follower: %s, %s' % (
+            author.id, author.name, follower.follower_id, follower.follower_name))
+    print('======Follower=======src: %s===afterparsing: %s=====show:%s=====Name:%s %s==' % (
+        src_len, len(follower_ids), author.follower_count, author.name, author.id))
+    return len(follower_ids) > src_len
+
 def _add_parsing_item(follower_id, session):
     item = session.query(jianshu_orm.ParsingItem).filter(jianshu_orm.ParsingItem.author_id == follower_id).first()
     if item is None:
@@ -278,13 +365,70 @@ def _add_parsing_item(follower_id, session):
 def _parse_articles(author, parent_soup, article_urls, session):
     src_len = len(article_urls)
     articleElems = parent_soup.select('div#list-container ul.note-list li')
+    print('====Article=========src: %s===new: %s======show: %s===name: %s, %s===' % (
+        src_len, len(articleElems), author.article_count, author.name, author.id))
+    for elem in articleElems:
+        soup = bs4.BeautifulSoup(str(elem), 'html.parser')
+        titleElem = soup.find('a', class_='title')
+        if titleElem is None:
+            continue
+        href = titleElem.get('href')
+        if href in article_urls:
+            continue
+        article_urls.append(href)
+        url = base_url + href
+        article_id = url.split('/').pop()
+        if article_id is None:
+            continue
+        item = session.query(Article).filter(Article.id == article_id).first()
+        if item is not None:
+            continue
+        title = _cut_long_str(_replace_spacial_char(titleElem.text), 100)
+        summaryElem = soup.find('p', class_='abstract')
+        if summaryElem is None:
+            continue
+        summary = _cut_long_str(_replace_spacial_char(summaryElem.text.strip()), 255)
+        readElem = soup.select('div.content div.meta  a')[0]
+        if readElem.text.strip().isdecimal():
+            read_count = int(readElem.text)
+        else:
+            continue
+        comment_count = 0
+        commentElem = readElem.find_next_sibling('a')
+        if commentElem != None:
+            comment_count = int(commentElem.text)
+        like_count = 0
+        likeElem = readElem.find_next_sibling('span')
+        if likeElem != None:
+            like_count = int(likeElem.text)
+        moneyElem = likeElem.find_next_sibling('span')
+        money_count = 0
+        if moneyElem != None:
+            money_count = int(moneyElem.text)
+        timeElem = soup.find('span', class_='time')
+        time_text = timeElem.get('data-shared-at')
+        # 2017 - 11 - 27 T23:36:33 + 08: 00
+        created_at = datetime.strptime(time_text, '%Y-%m-%dT%H:%M:%S+08:00')
+        article = Article(article_id, title, summary, url, created_at, read_count, comment_count,
+                          like_count, money_count, author.name)
+        article.author_id = author.id
+        session.add(article)
+        print('title: %s, \nsummary:%s, \nurl:%s, \ntime:%s, \nread: %s, \ncomment:%s, \nlike:%s, \nmoney:%s' % (
+            title, summary, url, created_at, read_count, comment_count, like_count, money_count))
+    print('====Article=========src: %s===afterparsing: %s======show: %s===name: %s, %s===' % (
+        src_len, len(article_urls), author.article_count, author.name, author.id))
+    return len(article_urls) > src_len
+
+def _parse_articles_backup(author, parent_soup, article_urls, session):
+    src_len = len(article_urls)
+    articleElems = parent_soup.select('div#list-container ul.note-list li')
     print('====Article=========src: %s===new: %s======show: %s======' % (
-    src_len, len(articleElems), author.article_count))
+        src_len, len(articleElems), author.article_count))
     if len(articleElems) <= src_len:
         del articleElems
         return False
     for elem in articleElems[src_len:]:
-        soup = bs4.BeautifulSoup(str(elem))
+        soup = bs4.BeautifulSoup(str(elem), 'html.parser')
         titleElem = soup.find('a', class_='title')
         href = titleElem.get('href')
         if href in article_urls:
@@ -344,7 +488,12 @@ def _get_html_inner_text(url):
         with urllib.request.urlopen(req) as f:
             print(type(f))
             print('status: ', f.status, f.reason)
-            html_text = f.read().decode('utf-8')
+            if f.url != url:
+                logging.warning('<Warning> url doest\'t match: src: %s, \n, new: f.url: %s' % (url, f.url))
+            if 'timeline' in f.url:
+                html_text = None
+            else:
+                html_text = f.read().decode('utf-8')
             del req
             return html_text
     except Exception as ex:
@@ -471,6 +620,7 @@ class ParserThread(threading.Thread):
                 logging.error(str(error))
             finally:
                 session.close()
+                session.prune()
                 del session
                 del author
 
@@ -509,5 +659,6 @@ class AuthorThread(threading.Thread):
                 logging.error(str(error))
             finally:
                 session.close()
+                session.prune()
                 del session
                 del item
