@@ -2,14 +2,14 @@ import pymysql
 from sqlalchemy import create_engine, Column, String, Integer, DateTime, ForeignKey, Text, Index, UniqueConstraint, \
     Boolean
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship, sessionmaker, column_property
+from sqlalchemy.orm import relationship, sessionmaker, scoped_session
 
 def init_mysql():
     try:
         # conn = aiomysql.connect(user='root',password='123456',db='my_blog')
         conn = pymysql.connect(user='root', password='123456', charset='utf8')
         cur = conn.cursor()
-        create_db = 'create database if not EXISTS jianshuwebsite'
+        create_db = 'CREATE jianshuwebsite IF NOT EXISTS '
         # drop_table = 'drop table if EXISTS my_blog.users '
         # create_users_table = 'CREATE TABLE IF NOT EXISTS my_blog.users(id varchar(50) not null primary key, email VARCHAR(50) NOT NULL, password VARCHAR(50) NOT NULL,' \
         #                      'is_admin TINYINT, name VARCHAR(50) NOT NULL, image VARCHAR(500), created_at REAL, age TINYINT, is_male bool, note TEXT)'
@@ -34,10 +34,14 @@ def init_mysql():
 
 engine = create_engine('mysql+pymysql://root:123456@127.0.0.1:3306/jianshuwebsite?charset=utf8', echo=False)
 Base = declarative_base()
-DBSession = sessionmaker(bind=engine, autoflush=True)
+_DBSession = sessionmaker(bind=engine, autoflush=True)
+_ScopedSession = scoped_session(sessionmaker(bind=engine, autoflush=False))
 
 def get_db_session():
-    return DBSession()
+    return _DBSession()
+
+def get_db_scoped_session():
+    return _ScopedSession()
 
 class User(Base):
     __tablename__ = 'users'
@@ -55,9 +59,8 @@ class User(Base):
     note = Column(String(255))
     url = Column(String(255))
     is_all_complete = Column(Boolean, default=False)
-    is_article_complete = Column(Boolean, default=False)
-    is_follower_complete = Column(Boolean, default=False)
-    is_all_complete = Column(Boolean, default=False)
+    is_article_complete = Column(Integer, default=0)
+    is_follower_complete = Column(Integer, default=0)
 
     # articles = relationship('Article', primaryjoin='users.c.id==articles.c.author_id')
     # followers = relationship('Follower', primaryjoin='users.c.id==followers.c.following_id')
