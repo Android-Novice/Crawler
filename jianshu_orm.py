@@ -9,7 +9,7 @@ def init_mysql():
         # conn = aiomysql.connect(user='root',password='123456',db='my_blog')
         conn = pymysql.connect(user='root', password='123456', charset='utf8')
         cur = conn.cursor()
-        create_db = 'CREATE jianshuwebsite IF NOT EXISTS '
+        create_db = 'CREATE Database IF NOT EXISTS jianshuwebsite'
         # drop_table = 'drop table if EXISTS my_blog.users '
         # create_users_table = 'CREATE TABLE IF NOT EXISTS my_blog.users(id varchar(50) not null primary key, email VARCHAR(50) NOT NULL, password VARCHAR(50) NOT NULL,' \
         #                      'is_admin TINYINT, name VARCHAR(50) NOT NULL, image VARCHAR(500), created_at REAL, age TINYINT, is_male bool, note TEXT)'
@@ -35,13 +35,13 @@ def init_mysql():
 engine = create_engine('mysql+pymysql://root:123456@127.0.0.1:3306/jianshuwebsite?charset=utf8', echo=False)
 Base = declarative_base()
 _DBSession = sessionmaker(bind=engine, autoflush=True)
-_ScopedSession = scoped_session(sessionmaker(bind=engine, autoflush=False))
+# _ScopedSession = scoped_session(sessionmaker(bind=engine, autoflush=False))
 
 def get_db_session():
     return _DBSession()
 
-def get_db_scoped_session():
-    return _ScopedSession()
+# def get_db_scoped_session():
+#     return _ScopedSession()
 
 class User(Base):
     __tablename__ = 'users'
