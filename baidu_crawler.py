@@ -10,10 +10,7 @@ import re
 import os
 import requests
 import time
-
-# logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s -%(message)s')
-##logging.basicConfig(filename=r'D:\python test files\firstlog.log', level=logging.DEBUG, format='%(asctime)s - %(levelname)s -%(message)s')
-##logging.debug('start of program')
+import urllib.request
 
 visited_urls = ['http://www.baidu.com', 'www.baidu.com', 'http://www.baidu.com/']
 
@@ -140,7 +137,7 @@ def download_image(url, index):
         if extension == '':
             extension = '.jpg'
     except Exception as error:
-        logging(str(error))
+        logging.error(str(error))
     root_dir = 'D://download images'
     if not os.path.exists(root_dir):
         os.makedirs(root_dir)
@@ -186,7 +183,7 @@ def filter_url(url, response):
             return None
     return url
 
-def get_beautifulsoup(url, params):
+def get_beautifulsoup(url):
     hea = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 6.3; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2272.118 Safari/537.36'}
     logging.info('************************************************')

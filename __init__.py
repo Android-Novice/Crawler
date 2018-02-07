@@ -4,6 +4,9 @@ import jianshu_orm
 import jianshu_crawler
 from jianshu_crawler import start_crawling
 import logging
+
+from xkcd_crawler import comicPicsCrawling
+
 logging.basicConfig(filename='D:\crawler.log', level=logging.DEBUG, format='%(asctime)s - %(levelname)s -%(message)s',datefmt='%m/%d/%Y %H:%M:%S %p')
 logging.debug('Test....')
 
@@ -15,7 +18,9 @@ def filter_emoj(src_text):
         print(i)
 
 if __name__ == '__main__':
+    # comicPicsCrawling()
     # import re
+    baidu_crawler.baiduWebCrawling()
     #
     # try:
     #     # Wide UCS-4 build
@@ -52,7 +57,7 @@ if __name__ == '__main__':
     # str_text = ''.join(list)
     # filter_emoj(str_text)
 
-    start_crawling()
+    # start_crawling()
 
     # jianshu_orm.init_mysql()
     # user = jianshu_orm.User()

@@ -2,7 +2,7 @@ import pymysql
 from sqlalchemy import create_engine, Column, String, Integer, DateTime, ForeignKey, Text, Index, UniqueConstraint, \
     Boolean
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship, sessionmaker, scoped_session
+from sqlalchemy.orm import relationship, sessionmaker
 
 def init_mysql():
     try:
